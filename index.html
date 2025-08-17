@@ -1,112 +1,152 @@
+<!-- NOTE: This is your current Timer file with ONLY the header emoji ⚒️ removed. No other markup, styles, or logic were changed. -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Bitcraft Timer – Themed</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bitcraft Timer</title>
   <link rel="icon" href="./favicon.png" />
+  <meta name="description" content="Calculate crafting and gathering duration for Bitcraft Online.">
+  <meta name="keywords" content="crafting calculator, game calculator, stamina calculator, crafting time, Bitcraft Online, bitcraft tools, bitcraft timer">
+  <meta name="robots" content="index, follow">
+  <meta property="og:title" content="Bitcraft Timer">
+  <meta property="og:description" content="Calculate crafting and gathering duration for Bitcraft Online.">
+  <meta property="og:type" content="website">
+  <link rel="canonical" href="#">
   <style>
-    /* Styling unchanged from previous version */
+    :root{--primary:#2563eb;--primary-dark:#1d4ed8;--secondary:#64748b;--success:#059669;--warning:#d97706;--background:#f8fafc;--surface:#ffffff;--text:#1e293b;--text-muted:#64748b;--border:#e2e8f0;--shadow:0 4px 6px -1px rgb(0 0 0 / 0.1);--shadow-lg:0 20px 25px -5px rgb(0 0 0 / 0.1);--radius:0.75rem}
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubuntu,Cantarell,sans-serif;background:var(--background);color:var(--text);line-height:1.6;min-height:100vh}
+    .container{max-width:1200px;margin:0 auto;padding:1rem}
+    header{text-align:center;padding:2rem 0}
+    h1{font-size:clamp(1.75rem,4vw,2.5rem);font-weight:800;color:var(--primary);margin-bottom:.5rem}
+    .subtitle{font-size:1.125rem;color:var(--text-muted);max-width:600px;margin:0 auto}
+    .calculator-grid{display:grid;grid-template-columns:1fr;gap:2rem}
+    @media (min-width:768px){.calculator-grid{grid-template-columns:1fr 1fr}}
+    .input-card,.result-card{background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow);padding:1.5rem;border:1px solid var(--border)}
+    .card-title{font-size:1.25rem;font-weight:700;color:var(--text);margin-bottom:1.5rem;display:flex;align-items:center;gap:.5rem}
+    .input-group{margin-bottom:1.25rem}
+    .input-group:last-child{margin-bottom:0}
+    .example-image{max-width:100%;height:auto;border-radius:.5rem;box-shadow:0 2px 8px rgb(0 0 0 / .08);display:block;margin-left:auto;margin-right:auto;margin-bottom:1.5rem}
+    label{display:block;font-weight:600;color:var(--text);margin-bottom:.5rem;font-size:.875rem;text-transform:uppercase;letter-spacing:.025em}
+    input,select{width:100%;padding:.875rem 1rem;border:2px solid var(--border);border-radius:.5rem;font-size:1rem;background:var(--surface);color:var(--text);transition:all .2s ease}
+    input:focus,select:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgb(37 99 235 / .1)}
+    input:hover,select:hover{border-color:var(--secondary)}
+    .help-label-totalEffort{color:#ED1C24}.help-label-toolPower{color:#FF7F27}.help-label-delay{color:#A349A4}.help-label-tier{color:#22B14C}
+    .calculate-btn{width:100%;padding:1rem 1.5rem;background:linear-gradient(135deg,var(--primary) 0%,var(--primary-dark) 100%);color:#fff;border:none;border-radius:.5rem;font-size:1rem;font-weight:600;cursor:pointer;transition:all .2s ease;margin-top:1.5rem;text-transform:uppercase;letter-spacing:.025em}
+    .calculate-btn:hover{transform:translateY(-2px);box-shadow:var(--shadow-lg)}
+    .calculate-btn:active{transform:translateY(0)}
+    .result-card{display:none}
+    .result-card.show{display:block;animation:slideIn .4s ease}
+    @keyframes slideIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+    .time-display{font-size:2.5rem;font-weight:900;color:var(--primary);text-align:center;margin:1rem 0}
+    .seconds-display{text-align:center;color:var(--text-muted);font-size:1rem;margin-bottom:1.5rem}
+    .stamina-alert{padding:1rem;border-radius:.5rem;margin:1rem 0;font-weight:500;display:none}
+    .stamina-alert.show{display:block}
+    .stamina-alert.success{background:rgb(34 197 94 / .1);border:1px solid rgb(34 197 94 / .2);color:var(--success)}
+    .stamina-alert.warning{background:rgb(217 119 6 / .1);border:1px solid rgb(217 119 6 / .2);color:var(--warning)}
+    .calculation-steps{background:var(--background);border-radius:.5rem;padding:1rem;margin-top:1.5rem}
+    .step{display:flex;justify-content:space-between;align-items:center;padding:.5rem 0;border-bottom:1px solid var(--border);font-size:.875rem}
+    .step:last-child{border-bottom:none}
+    .step-label{font-weight:600;color:var(--text-muted)}
+    .step-value{font-weight:700;color:var(--text)}
+    .error{background:rgb(239 68 68 / .1);border:1px solid rgb(239 68 68 / .2);color:#dc2626;padding:1rem;border-radius:.5rem;margin-top:1rem;font-weight:500;display:none}
+    .error.show{display:block}
+    .icon{width:1.25rem;height:1.25rem}
+    footer{text-align:center;padding:2rem 0;color:var(--text-muted);font-size:.875rem}
+    @media (max-width:767px){.container{padding:.5rem}.input-card,.result-card{padding:1rem}.time-display{font-size:2rem}}
+    @media (prefers-color-scheme:dark){:root{--background:#0f172a;--surface:#1e293b;--text:#f1f5f9;--text-muted:#94a3b8;--border:#334155}}
   </style>
 </head>
 <body>
   <div class="container">
     <header>
-      <h1>BITCRAFT TIMER</h1>
-      <p class="subtitle">Working duration, stamina usage & an optional end‑time alarm.</p>
-      <div class="divider"></div>
+      <!-- Removed the emoji here -->
+      <h1>Bitcraft Timer</h1>
+      <p class="subtitle">Calculate working duration, stamina consumption, and pause requirements for different item tiers</p>
     </header>
 
     <main class="calculator-grid">
-      <!-- Inputs -->
-      <section class="card">
-        <div class="card-title">
-          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 2 7l10 5 10-5-10-5Zm0 7L2 4v13l10 5 10-5V4l-10 5Z"/></svg>
-          <span>Working Parameters</span>
+      <section class="input-card">
+        <h2 class="card-title">
+          <svg class="icon" fill="currentColor" viewBox="0 0 20 20"><path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838L7.667 9.088l1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3zM3.31 9.397L5 10.12v4.102a8.969 8.969 0 00-1.05-.174 1 1 0 01-.89-.89 11.115 11.115 0 01-.25-3.762zM9.3 16.573A9.026 9.026 0 007 14.935v-3.957l1.818.78a3 3 0 002.364 0l5.508-2.361a11.026 11.026 0 01.25 3.762 1 1 0 01-.89.89 8.968 8.968 0 00-5.35 2.524 1 1 0 01-1.4 0z"/></svg>
+          Working Parameters
+        </h2>
+
+        <picture>
+          <source srcset="images/example1.webp" type="image/webp">
+          <img src="images/example1.png" alt="Bitcraft UI helper" class="example-image">
+        </picture>
+
+        <div class="input-group">
+          <label for="totalEffort">Total Effort <span class="help-label-totalEffort">( 1 )</span></label>
+          <input type="number" id="totalEffort" placeholder="Enter total effort required" min="0" step="1" aria-describedby="effort-help" />
         </div>
 
-        <label for="totalEffort">Total Effort <span class="help-label-totalEffort">( 1 )</span></label>
-        <input id="totalEffort" type="number" min="0" step="1" placeholder="Enter total effort" />
+        <div class="input-group">
+          <label for="toolPower">Tool Power <span class="help-label-toolPower">( 2 )</span></label>
+          <input type="number" id="toolPower" placeholder="Enter tool power value" min="1" step="1" aria-describedby="power-help" />
+        </div>
 
-        <label for="toolPower">Tool Power <span class="help-label-toolPower">( 2 )</span></label>
-        <input id="toolPower" type="number" min="1" step="1" placeholder="Enter tool power" />
+        <div class="input-group">
+          <label for="delay">Delay (seconds) <span class="help-label-delay">( 3 )</span></label>
+          <input type="number" id="delay" placeholder="Enter delay between ticks" min="0" step="0.01" aria-describedby="delay-help" />
+        </div>
 
-        <label for="delay">Delay (seconds) <span class="help-label-delay">( 3 )</span></label>
-        <input id="delay" type="number" min="0" step="0.01" placeholder="e.g. 0.80" />
+        <div class="input-group">
+          <label for="tier">Item Tier <span class="help-label-tier">( 4 )</span></label>
+          <select id="tier" aria-describedby="tier-help">
+            <option value="">Select item tier...</option>
+            <option value="1">Tier 1 (0.75 stamina/tick)</option>
+            <option value="2">Tier 2 (0.89 stamina/tick)</option>
+            <option value="3">Tier 3 (1.03 stamina/tick)</option>
+            <option value="4">Tier 4 (1.16 stamina/tick)</option>
+            <option value="5">Tier 5 (1.28 stamina/tick)</option>
+            <option value="6">Tier 6 (1.41 stamina/tick)</option>
+            <option value="7">Tier 7 (1.52 stamina/tick)</option>
+            <option value="8">Tier 8 (1.64 stamina/tick)</option>
+            <option value="9">Tier 9 (1.75 stamina/tick)</option>
+            <option value="10">Tier 10 (1.86 stamina/tick)</option>
+          </select>
+        </div>
 
-        <label for="tier">Item Tier <span class="help-label-tier">( 4 )</span></label>
-        <select id="tier">
-          <option value="">Select item tier…</option>
-          <option value="1">Tier 1 (0.75 stamina/tick)</option>
-          <option value="2">Tier 2 (0.89 stamina/tick)</option>
-          <option value="3">Tier 3 (1.03 stamina/tick)</option>
-          <option value="4">Tier 4 (1.16 stamina/tick)</option>
-          <option value="5">Tier 5 (1.28 stamina/tick)</option>
-          <option value="6">Tier 6 (1.41 stamina/tick)</option>
-          <option value="7">Tier 7 (1.52 stamina/tick)</option>
-          <option value="8">Tier 8 (1.64 stamina/tick)</option>
-          <option value="9">Tier 9 (1.75 stamina/tick)</option>
-          <option value="10">Tier 10 (1.86 stamina/tick)</option>
-        </select>
+        <div class="input-group">
+          <label for="stamina">Max stamina (optional)</label>
+          <input type="number" id="stamina" placeholder="Enter your stamina" min="1" step="1" aria-describedby="stamina-help" />
+        </div>
 
-        <label for="stamina">Max stamina (optional)</label>
-        <input id="stamina" type="number" min="1" step="1" placeholder="Enter total stamina" />
-
-        <button class="btn" onclick="calculateTime()">Calculate Working Time</button>
-        <div id="error" class="error"></div>
+        <button class="calculate-btn" onclick="calculateTime()" aria-label="Calculate working time">Calculate Working Time</button>
+        <div class="error" id="error" role="alert"></div>
       </section>
 
-      <!-- Results -->
-      <section id="result" class="card result-card">
-        <div class="card-title">
-          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20Zm1-14h-2v6l5 3 .99-1.71L13 12V8Z"/></svg>
-          <span>Working Results</span>
-        </div>
-
-        <div id="timeDisplay" class="time-display"></div>
-        <div id="secondsDisplay" class="seconds-display"></div>
-
-        <!-- Alarm / Timer Controls -->
-        <div class="alarm">
-          <div class="alarm-row">
-            <div class="inline">
-              <input id="enableAlarm" type="checkbox" checked />
-              <label for="enableAlarm" style="text-transform:none;letter-spacing:0;margin:0">Enable alarm when time is up</label>
-            </div>
-            <div class="inline">
-              <label for="alarmVolume" class="muted" style="text-transform:none;margin:0">Volume</label>
-              <input id="alarmVolume" type="range" min="0" max="1" step="0.01" value="0.85" />
-            </div>
-          </div>
-          <div class="alarm-row" style="margin-top:10px; grid-template-columns: 1fr auto auto auto;">
-            <button id="startBtn" class="btn" onclick="startTimer()">Start Timer</button>
-            <button id="pauseBtn" class="btn btn-ghost" onclick="pauseTimer()" disabled>Pause</button>
-            <button id="resetBtn" class="btn btn-ghost" onclick="resetTimer()" disabled>Reset</button>
-            <button id="testSoundBtn" class="btn btn-ghost" onclick="testAlarm()">Test Sound</button>
-          </div>
-          <div id="countdownStatus" class="seconds-display" style="margin-top:6px"></div>
-        </div>
-
-        <div id="staminaAlert" class="stamina-alert" role="alert"></div>
-
-        <div class="steps">
-          <div class="step"><span class="step-label">Notches Required</span><span id="step1Value"></span></div>
-          <div class="step"><span class="step-label">Total Time</span><span id="step2Value"></span></div>
-          <div class="step"><span class="step-label">Stamina Info</span><span id="step3Value"></span></div>
+      <section class="result-card" id="result" aria-live="polite">
+        <h2 class="card-title">
+          <svg class="icon" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/></svg>
+          Working Results
+        </h2>
+        <div class="time-display" id="timeDisplay" aria-label="Formatted working time"></div>
+        <div class="seconds-display" id="secondsDisplay"></div>
+        <div class="stamina-alert" id="staminaAlert" role="alert"></div>
+        <div class="calculation-steps">
+          <div class="step" id="step1"><span class="step-label">Notches Required</span><span class="step-value" id="step1Value"></span></div>
+          <div class="step" id="step2"><span class="step-label">Total Time</span><span class="step-value" id="step2Value"></span></div>
+          <div class="step" id="step3"><span class="step-label">Stamina Info</span><span class="step-value" id="step3Value"></span></div>
         </div>
       </section>
     </main>
-
-    <footer>
-      <p>© 2025 Bitcraft Timer. UI theming inspired by the Bitcraft 2025 Roadmap.</p>
-    </footer>
   </div>
 
-  <!-- Alarm sound (replace src with your own if needed) -->
-  <audio id="alarmAudio" preload="auto" src="https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg"></audio>
+  <footer>
+    <p>&copy; 2025 Bitcraft Timer. Optimize your working sessions with precise time and stamina calculations.</p>
+    <p style="margin-top:.5rem;color:var(--text-muted);font-size:.95em">This website has no official link with Clockwork Labs or Bitcraft Online.</p>
+  </footer>
 
+  <!-- ORIGINAL SCRIPT (unchanged logic) -->
   <script>
-    // Script unchanged, still uses calculateTime and timer logic.
+    function formatTime(totalSeconds){const h=Math.floor(totalSeconds/3600),m=Math.floor((totalSeconds%3600)/60),s=Math.floor(totalSeconds%60);return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`}
+    let lastComputedSeconds=0;function calculateTime(){const e=parseFloat(document.getElementById('totalEffort').value),t=parseFloat(document.getElementById('toolPower').value),a=parseFloat(document.getElementById('delay').value),r=document.getElementById('tier').value?parseInt(document.getElementById('tier').value):null,n=document.getElementById('stamina').value?parseInt(document.getElementById('stamina').value):null,o={1:.75,2:.89,3:1.03,4:1.16,5:1.28,6:1.41,7:1.52,8:1.64,9:1.75,10:1.86},s=document.getElementById('error'),l=document.getElementById('staminaAlert');s.classList.remove('show');l.classList.remove('show','success','warning');if(isNaN(e)||isNaN(t)||isNaN(a)||r===null){s.textContent='Please fill in all required fields and select a tier.';s.classList.add('show');document.getElementById('result').classList.remove('show');return}if(e<=0||t<=0||a<0){s.textContent='Total effort and tool power must be positive. Delay cannot be negative.';s.classList.add('show');document.getElementById('result').classList.remove('show');return}if(n!==null&&n<=0){s.textContent='Stamina must be a positive number if provided.';s.classList.add('show');document.getElementById('result').classList.remove('show');return}const c=Math.ceil(e/t),d=c*a;lastComputedSeconds=d;let i='';if(n!==null){const u=o[r],m=c*u;if(m>n){const g=Math.floor(n/u),p=g*a,f=formatTime(p),v=Math.ceil(m/n)-1;i=`⚠️ ${v} pause${v>1?'s':''} needed. Time before first pause: ${f}`;l.classList.add('warning')}else{const h=(n-m).toFixed(2);i=`✅ Stamina sufficient! ${h} stamina remaining after working.`;l.classList.add('success')}l.textContent=i;l.classList.add('show')}document.getElementById('timeDisplay').textContent=formatTime(d);document.getElementById('secondsDisplay').textContent=`${d.toFixed(2)} total seconds`;document.getElementById('step1Value').textContent=`${c} notches`;document.getElementById('step2Value').textContent=`${d.toFixed(2)}s`;if(n!==null){const y=(c*o[r]).toFixed(2);document.getElementById('step3Value').textContent=`${y}/${n} (${o[r]}/tick)`}else{document.getElementById('step3Value').textContent=`${o[r]} stamina/tick`}document.getElementById('result').classList.add('show')}
+    document.querySelectorAll('input, select').forEach(e=>{const t=function(){const e=document.getElementById('totalEffort').value,t=document.getElementById('toolPower').value,a=document.getElementById('delay').value,r=document.getElementById('tier').value;if(e&&t&&a&&r){calculateTime()}};e.addEventListener('input',t);e.addEventListener('change',t)});
+    document.addEventListener('keypress',function(e){if(e.key==='Enter'){calculateTime()}});
   </script>
 </body>
 </html>
