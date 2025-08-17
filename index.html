@@ -1,4 +1,3 @@
-<!-- NOTE: This is your current Timer file with ONLY the header emoji ⚒️ removed. No other markup, styles, or logic were changed. -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -6,15 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Bitcraft Timer</title>
   <link rel="icon" href="./favicon.png" />
-  <meta name="description" content="Calculate crafting and gathering duration for Bitcraft Online.">
-  <meta name="keywords" content="crafting calculator, game calculator, stamina calculator, crafting time, Bitcraft Online, bitcraft tools, bitcraft timer">
-  <meta name="robots" content="index, follow">
-  <meta property="og:title" content="Bitcraft Timer">
-  <meta property="og:description" content="Calculate crafting and gathering duration for Bitcraft Online.">
-  <meta property="og:type" content="website">
-  <link rel="canonical" href="#">
+  <meta name="description" content="Calculate working duration and stamina for Bitcraft Online.">
   <style>
-    :root{--primary:#2563eb;--primary-dark:#1d4ed8;--secondary:#64748b;--success:#059669;--warning:#d97706;--background:#f8fafc;--surface:#ffffff;--text:#1e293b;--text-muted:#64748b;--border:#e2e8f0;--shadow:0 4px 6px -1px rgb(0 0 0 / 0.1);--shadow-lg:0 20px 25px -5px rgb(0 0 0 / 0.1);--radius:0.75rem}
+    :root{--primary:#2563eb;--primary-dark:#1d4ed8;--secondary:#64748b;--success:#059669;--warning:#d97706;--background:#f8fafc;--surface:#ffffff;--text:#1e293b;--text-muted:#64748b;--border:#e2e8f0;--shadow:0 4px 6px -1px rgb(0 0 0 / 0.1);--shadow-lg:0 20px 25px -5px rgb(0 0 0 / 0.1);--radius:.75rem}
     *{margin:0;padding:0;box-sizing:border-box}
     body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubuntu,Cantarell,sans-serif;background:var(--background);color:var(--text);line-height:1.6;min-height:100vh}
     .container{max-width:1200px;margin:0 auto;padding:1rem}
@@ -56,12 +49,18 @@
     footer{text-align:center;padding:2rem 0;color:var(--text-muted);font-size:.875rem}
     @media (max-width:767px){.container{padding:.5rem}.input-card,.result-card{padding:1rem}.time-display{font-size:2rem}}
     @media (prefers-color-scheme:dark){:root{--background:#0f172a;--surface:#1e293b;--text:#f1f5f9;--text-muted:#94a3b8;--border:#334155}}
+
+    /* === Minimal timer/alarm UI matching existing style === */
+    .alarm-controls{background:var(--background);border:1px dashed var(--border);border-radius:.5rem;padding:.75rem;margin-top:.75rem}
+    .alarm-row{display:grid;grid-template-columns:1fr 1fr;gap:.75rem;align-items:center}
+    .inline{display:flex;align-items:center;gap:.5rem}
+    .timer-btn{padding:.75rem 1rem;border:none;border-radius:.5rem;background:linear-gradient(135deg,var(--primary) 0%,var(--primary-dark) 100%);color:#fff;font-weight:600;cursor:pointer}
+    .timer-btn:disabled{opacity:.5;cursor:not-allowed}
   </style>
 </head>
 <body>
   <div class="container">
     <header>
-      <!-- Removed the emoji here -->
       <h1>Bitcraft Timer</h1>
       <p class="subtitle">Calculate working duration, stamina consumption, and pause requirements for different item tiers</p>
     </header>
@@ -75,24 +74,21 @@
 
         <picture>
           <source srcset="images/example1.webp" type="image/webp">
-          <img src="images/example1.png" alt="Bitcraft UI helper" class="example-image">
+          <img src="images/example1.png" alt="Bitcraft UI helper" class="example-image" />
         </picture>
 
         <div class="input-group">
           <label for="totalEffort">Total Effort <span class="help-label-totalEffort">( 1 )</span></label>
           <input type="number" id="totalEffort" placeholder="Enter total effort required" min="0" step="1" aria-describedby="effort-help" />
         </div>
-
         <div class="input-group">
           <label for="toolPower">Tool Power <span class="help-label-toolPower">( 2 )</span></label>
           <input type="number" id="toolPower" placeholder="Enter tool power value" min="1" step="1" aria-describedby="power-help" />
         </div>
-
         <div class="input-group">
           <label for="delay">Delay (seconds) <span class="help-label-delay">( 3 )</span></label>
           <input type="number" id="delay" placeholder="Enter delay between ticks" min="0" step="0.01" aria-describedby="delay-help" />
         </div>
-
         <div class="input-group">
           <label for="tier">Item Tier <span class="help-label-tier">( 4 )</span></label>
           <select id="tier" aria-describedby="tier-help">
@@ -109,7 +105,6 @@
             <option value="10">Tier 10 (1.86 stamina/tick)</option>
           </select>
         </div>
-
         <div class="input-group">
           <label for="stamina">Max stamina (optional)</label>
           <input type="number" id="stamina" placeholder="Enter your stamina" min="1" step="1" aria-describedby="stamina-help" />
@@ -126,6 +121,28 @@
         </h2>
         <div class="time-display" id="timeDisplay" aria-label="Formatted working time"></div>
         <div class="seconds-display" id="secondsDisplay"></div>
+
+        <!-- Minimal countdown + alarm controls (added) -->
+        <div class="alarm-controls" id="alarmControls">
+          <div class="alarm-row">
+            <div class="inline">
+              <input type="checkbox" id="enableAlarm" checked>
+              <label for="enableAlarm" style="margin:0;text-transform:none;letter-spacing:0">Enable alarm when time is up</label>
+            </div>
+            <div class="inline">
+              <label for="alarmVolume" style="margin:0;text-transform:none">Volume</label>
+              <input id="alarmVolume" type="range" min="0" max="1" step="0.01" value="0.8" style="width:140px">
+            </div>
+          </div>
+          <div class="alarm-row" style="margin-top:.5rem;grid-template-columns:1fr auto auto auto;">
+            <button class="timer-btn" id="startBtn" onclick="startTimer()">Start Timer</button>
+            <button class="timer-btn" id="pauseBtn" onclick="pauseTimer()" disabled>Pause</button>
+            <button class="timer-btn" id="resetBtn" onclick="resetTimer()" disabled>Reset</button>
+            <button class="timer-btn" id="testSoundBtn" onclick="testAlarm()">Test Sound</button>
+          </div>
+          <div class="seconds-display" id="countdownStatus" style="text-align:center;margin-top:.5rem"></div>
+        </div>
+
         <div class="stamina-alert" id="staminaAlert" role="alert"></div>
         <div class="calculation-steps">
           <div class="step" id="step1"><span class="step-label">Notches Required</span><span class="step-value" id="step1Value"></span></div>
@@ -137,16 +154,28 @@
   </div>
 
   <footer>
-    <p>&copy; 2025 Bitcraft Timer. Optimize your working sessions with precise time and stamina calculations.</p>
-    <p style="margin-top:.5rem;color:var(--text-muted);font-size:.95em">This website has no official link with Clockwork Labs or Bitcraft Online.</p>
+    <p style="text-align:center;color:var(--text-muted);font-size:.9rem">&copy; 2025 Bitcraft Timer. This website has no official link with Clockwork Labs or Bitcraft Online.</p>
   </footer>
 
-  <!-- ORIGINAL SCRIPT (unchanged logic) -->
+  <!-- Alarm audio (added) -->
+  <audio id="alarmAudio" preload="auto" src="https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg"></audio>
+
   <script>
     function formatTime(totalSeconds){const h=Math.floor(totalSeconds/3600),m=Math.floor((totalSeconds%3600)/60),s=Math.floor(totalSeconds%60);return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`}
     let lastComputedSeconds=0;function calculateTime(){const e=parseFloat(document.getElementById('totalEffort').value),t=parseFloat(document.getElementById('toolPower').value),a=parseFloat(document.getElementById('delay').value),r=document.getElementById('tier').value?parseInt(document.getElementById('tier').value):null,n=document.getElementById('stamina').value?parseInt(document.getElementById('stamina').value):null,o={1:.75,2:.89,3:1.03,4:1.16,5:1.28,6:1.41,7:1.52,8:1.64,9:1.75,10:1.86},s=document.getElementById('error'),l=document.getElementById('staminaAlert');s.classList.remove('show');l.classList.remove('show','success','warning');if(isNaN(e)||isNaN(t)||isNaN(a)||r===null){s.textContent='Please fill in all required fields and select a tier.';s.classList.add('show');document.getElementById('result').classList.remove('show');return}if(e<=0||t<=0||a<0){s.textContent='Total effort and tool power must be positive. Delay cannot be negative.';s.classList.add('show');document.getElementById('result').classList.remove('show');return}if(n!==null&&n<=0){s.textContent='Stamina must be a positive number if provided.';s.classList.add('show');document.getElementById('result').classList.remove('show');return}const c=Math.ceil(e/t),d=c*a;lastComputedSeconds=d;let i='';if(n!==null){const u=o[r],m=c*u;if(m>n){const g=Math.floor(n/u),p=g*a,f=formatTime(p),v=Math.ceil(m/n)-1;i=`⚠️ ${v} pause${v>1?'s':''} needed. Time before first pause: ${f}`;l.classList.add('warning')}else{const h=(n-m).toFixed(2);i=`✅ Stamina sufficient! ${h} stamina remaining after working.`;l.classList.add('success')}l.textContent=i;l.classList.add('show')}document.getElementById('timeDisplay').textContent=formatTime(d);document.getElementById('secondsDisplay').textContent=`${d.toFixed(2)} total seconds`;document.getElementById('step1Value').textContent=`${c} notches`;document.getElementById('step2Value').textContent=`${d.toFixed(2)}s`;if(n!==null){const y=(c*o[r]).toFixed(2);document.getElementById('step3Value').textContent=`${y}/${n} (${o[r]}/tick)`}else{document.getElementById('step3Value').textContent=`${o[r]} stamina/tick`}document.getElementById('result').classList.add('show')}
     document.querySelectorAll('input, select').forEach(e=>{const t=function(){const e=document.getElementById('totalEffort').value,t=document.getElementById('toolPower').value,a=document.getElementById('delay').value,r=document.getElementById('tier').value;if(e&&t&&a&&r){calculateTime()}};e.addEventListener('input',t);e.addEventListener('change',t)});
     document.addEventListener('keypress',function(e){if(e.key==='Enter'){calculateTime()}});
+
+    // ===== Countdown + alarm (added) =====
+    let countdownInterval=null,remaining=0;const titleBase=document.title;const alarmAudio=document.getElementById('alarmAudio');const enableAlarm=document.getElementById('enableAlarm');const alarmVolume=document.getElementById('alarmVolume');const timeDisplay=document.getElementById('timeDisplay');const secondsDisplay=document.getElementById('secondsDisplay');const countdownStatus=document.getElementById('countdownStatus');const startBtn=document.getElementById('startBtn');const pauseBtn=document.getElementById('pauseBtn');const resetBtn=document.getElementById('resetBtn');
+    alarmAudio.volume=parseFloat(alarmVolume.value);alarmVolume.addEventListener('input',()=>{alarmAudio.volume=parseFloat(alarmVolume.value)});
+    function updateButtons(state){if(state==='running'){startBtn.disabled=true;pauseBtn.disabled=false;resetBtn.disabled=false}else if(state==='paused'){startBtn.disabled=false;startBtn.textContent='Resume';pauseBtn.disabled=true;resetBtn.disabled=false}else if(state==='done'){startBtn.disabled=false;startBtn.textContent='Start Timer';pauseBtn.disabled=true;resetBtn.disabled=false}else{startBtn.disabled=false;startBtn.textContent='Start Timer';pauseBtn.disabled=true;resetBtn.disabled=true}}
+    function startTimer(){if(!lastComputedSeconds||lastComputedSeconds<=0){countdownStatus.textContent='Compute time first, then start the timer.';return}if(!remaining||remaining<=0)remaining=Math.round(lastComputedSeconds);clearInterval(countdownInterval);let lastTick=performance.now();updateButtons('running');countdownStatus.textContent='Timer running…';countdownInterval=setInterval(()=>{const now=performance.now();const elapsed=(now-lastTick)/1000;lastTick=now;remaining=Math.max(0,remaining-elapsed);timeDisplay.textContent=formatTime(remaining);secondsDisplay.textContent=`${remaining.toFixed(2)} seconds remaining`;document.title=`⏳ ${formatTime(remaining)} – ${titleBase}`;if(remaining<=0){clearInterval(countdownInterval);countdownInterval=null;timeDisplay.textContent='00:00:00';secondsDisplay.textContent='0.00 seconds remaining';countdownStatus.textContent='Time is up!';document.title=`⏰ Time is up! – ${titleBase}`;updateButtons('done');playAlarm()}},200)}
+    function pauseTimer(){if(countdownInterval){clearInterval(countdownInterval);countdownInterval=null;countdownStatus.textContent='Paused';updateButtons('paused')}}
+    function resetTimer(soft=false){clearInterval(countdownInterval);countdownInterval=null;remaining=soft?Math.round(lastComputedSeconds):0;if(remaining>0){timeDisplay.textContent=formatTime(remaining);secondsDisplay.textContent=`${remaining.toFixed(2)} seconds remaining`}countdownStatus.textContent='';document.title=titleBase;updateButtons('idle')}
+    function playAlarm(){if(!enableAlarm.checked)return;alarmAudio.currentTime=0;const p=alarmAudio.play();if(p&&typeof p.catch==='function'){p.catch(()=>{tryWebAudioBeep()})}let flashes=0;const flash=setInterval(()=>{document.title=(document.title.startsWith('⏰'))?`🔔 Time is up! – ${titleBase}`:`⏰ Time is up! – ${titleBase}`;if(++flashes>10)clearInterval(flash)},700)}
+    function tryWebAudioBeep(){try{const ctx=new(window.AudioContext||window.webkitAudioContext)();const o=ctx.createOscillator();const g=ctx.createGain();o.type='sine';o.frequency.value=880;g.gain.value=parseFloat(alarmVolume.value);o.connect(g);g.connect(ctx.destination);o.start();setTimeout(()=>{o.stop();ctx.close()},1200)}catch(e){}}
+    function testAlarm(){playAlarm()}
   </script>
 </body>
 </html>
