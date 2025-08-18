@@ -7,10 +7,6 @@
   <link rel="icon" href="./favicon.png" />
   <meta name="description" content="Calculate working duration and stamina for Bitcraft Online." />
   <style>
-    /* =============================
-       Bitcraft Roadmap–inspired palette (colors only)
-       Deep navy bg, gold accents, slate panels, mint success, amber warning
-    ============================= */
     :root{
       --primary:#D9B76E; --primary-dark:#B8934E; --secondary:#7B879F;
       --success:#66E38A; --warning:#E6B34A;
@@ -72,7 +68,6 @@
     </header>
 
     <main class="calculator-grid">
-      <!-- INPUT CARD -->
       <section class="input-card">
         <h2 class="card-title">
           <svg class="icon" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true"><path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838L7.667 9.088l1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3zM3.31 9.397L5 10.12v4.102a8.969 8.969 0 00-1.05-.174 1 1 0 01-.89-.89 11.115 11.115 0 01-.25-3.762zM9.3 16.573A9.026 9.026 0 007 14.935v-3.957l1.818.78a3 3 0 002.364 0l5.508-2.361a11.026 11.026 0 01.25 3.762 1 1 0 01-.89.89 8.968 8.968 0 00-5.35 2.524 1 1 0 01-1.4 0z"/></svg>
@@ -116,13 +111,11 @@
         <div id="error" class="error" role="alert"></div>
       </section>
 
-      <!-- RESULT CARD -->
       <section id="result" class="result-card" aria-live="polite">
         <h2 class="card-title">Working Results</h2>
         <div id="timeDisplay" class="time-display" aria-live="polite"></div>
         <div id="secondsDisplay" class="seconds-display"></div>
 
-        <!-- Restored alarm + countdown controls -->
         <div id="alarmControls" class="alarm-controls">
           <div class="alarm-row" style="margin-bottom:.5rem">
             <div>
@@ -163,9 +156,14 @@
       </section>
     </main>
   </div>
+
   <footer><p>&copy; 2025 Bitcraft Timer. No official link with Clockwork Labs.</p></footer>
 
-  <audio id="alarmAudio" src="https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg"></audio>
+  <!-- Audio with MP3 fallback (Safari/iOS doesn't play OGG) -->
+  <audio id="alarmAudio" preload="auto">
+    <source src="https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg" type="audio/ogg" />
+    <source src="https://assets.mixkit.co/sfx/preview/mixkit-alarm-digital-clock-beep-989.mp3" type="audio/mpeg" />
+  </audio>
 
   <script>
     // ===== Utilities =====
@@ -177,10 +175,7 @@
       return `${h}:${m}:${s}`;
     };
 
-    const staminaCostByTier = {
-      1:0.75, 2:0.89, 3:1.03, 4:1.16, 5:1.28,
-      6:1.41, 7:1.52, 8:1.64, 9:1.75, 10:1.86
-    };
+    const staminaCostByTier = {1:0.75,2:0.89,3:1.03,4:1.16,5:1.28,6:1.41,7:1.52,8:1.64,9:1.75,10:1.86};
 
     // ===== DOM refs =====
     const els = {
@@ -253,12 +248,11 @@
       els.step1Value.textContent = `${notches} ticks`;
       els.step2Value.textContent = `${fmtHMS(totalSeconds)} (${Math.round(totalSeconds)}s)`;
 
-      // Stamina block
       const costPerTick = staminaCostByTier[tier];
       const totalStamina = +(notches * costPerTick).toFixed(2);
       let staminaMsg = `Cost ${costPerTick} per tick × ${notches} = ${totalStamina}`;
 
-      els.staminaAlert.className = 'stamina-alert'; // reset classes
+      els.staminaAlert.className = 'stamina-alert';
       els.staminaAlert.style.display = 'none';
 
       if(Number.isFinite(staminaMax) && staminaMax > 0){
@@ -277,12 +271,10 @@
       }
       els.step3Value.textContent = staminaMsg;
 
-      // Show result + enable sync
       els.result.classList.add('show');
       els.syncFromResult.disabled = !(totalSeconds > 0);
     }
 
-    // Wire calculate button
     els.calcBtn.addEventListener('click', calculateTime);
 
     // ===== Countdown + Alarm logic =====
@@ -290,6 +282,7 @@
     let remaining = 0;
     let running = false;
     let alarmRinging = false;
+    let audioCtx = null; // WebAudio fallback
 
     function updateLiveCountdown(){
       els.liveCountdown.textContent = running
@@ -333,6 +326,12 @@
       updateLiveCountdown();
       setButtons();
       timerInterval = setInterval(tick, 1000);
+
+      // On the first user gesture, resume AudioContext if needed
+      try{
+        if(!audioCtx){ audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+        if(audioCtx.state === 'suspended'){ audioCtx.resume(); }
+      }catch(e){}
     }
 
     function pauseTimer(){
@@ -351,33 +350,65 @@
       setButtons();
     }
 
+    function playWebAudioBeep(durationMs=2500){
+      try{
+        if(!audioCtx){ audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+        if(audioCtx.state === 'suspended'){ audioCtx.resume(); }
+        const o = audioCtx.createOscillator();
+        const g = audioCtx.createGain();
+        o.type = 'square';
+        o.frequency.value = 880; // A5
+        g.gain.setValueAtTime(0.001, audioCtx.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.2, audioCtx.currentTime + 0.05);
+        g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + durationMs/1000);
+        o.connect(g).connect(audioCtx.destination);
+        o.start();
+        o.stop(audioCtx.currentTime + durationMs/1000);
+        alarmRinging = true;
+        setButtons();
+        // auto-clear after duration
+        setTimeout(()=>{ alarmRinging = false; setButtons(); }, durationMs);
+      }catch(e){ /* ignore */ }
+    }
+
     function ringAlarm(){
       const audio = els.alarmAudio;
       audio.loop = els.loopAlarm.checked;
       audio.volume = Number(els.volume.value);
       audio.currentTime = 0;
-      audio.play().catch(()=>{});
-      alarmRinging = true;
-      setButtons();
+
+      const tryPlay = () => audio.play().then(()=>{
+        alarmRinging = true;
+        setButtons();
+      }).catch(()=>{
+        // Fallback if autoplay or codec fails
+        playWebAudioBeep(3000);
+      });
+
+      // If source not yet ready, wait a tick
+      if(audio.readyState < 2){ // HAVE_CURRENT_DATA
+        const onCanPlay = ()=>{ audio.removeEventListener('canplay', onCanPlay); tryPlay(); };
+        audio.addEventListener('canplay', onCanPlay);
+        audio.load();
+      } else {
+        tryPlay();
+      }
     }
 
     function stopAlarm(){
-      els.alarmAudio.pause();
-      els.alarmAudio.currentTime = 0;
+      const audio = els.alarmAudio;
+      try{ audio.pause(); audio.currentTime = 0; }catch(e){}
       alarmRinging = false;
       setButtons();
     }
 
-    // Timer controls events
+    // Timer control events
     els.startBtn.addEventListener('click', startTimer);
     els.pauseBtn.addEventListener('click', pauseTimer);
     els.resetBtn.addEventListener('click', resetTimer);
     els.testAlarmBtn.addEventListener('click', ()=>{
       ringAlarm();
-      // auto-stop after 3s if not looping
-      if(!els.loopAlarm.checked){
-        setTimeout(stopAlarm, 3000);
-      }
+      if(!els.loopAlarm.checked){ setTimeout(stopAlarm, 3000); }
     });
     els.stopAlarmBtn.addEventListener('click', stopAlarm);
     els.volume.addEventListener('input', ()=>{ els.alarmAudio.volume = Number(els.volume.value); });
@@ -390,13 +421,17 @@
       }
     });
 
-    // Make Enter key on inputs trigger calculation
+    // Enter key triggers calculation
     ['totalEffort','toolPower','delay','tier','stamina'].forEach(id=>{
       const node = document.getElementById(id);
-      node.addEventListener('keydown', (e)=>{
-        if(e.key==='Enter') calculateTime();
-      });
+      node.addEventListener('keydown', (e)=>{ if(e.key==='Enter') calculateTime(); });
     });
+
+    // Preload audio on first interaction to satisfy mobile autoplay rules
+    document.addEventListener('click', function once(){
+      const a = els.alarmAudio; try{ a.load(); }catch(e){}
+      document.removeEventListener('click', once, {capture:false});
+    }, {capture:false, once:true});
   </script>
 </body>
 </html>
