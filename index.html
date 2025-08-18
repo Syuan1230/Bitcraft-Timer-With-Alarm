@@ -1,15 +1,11 @@
-<!-- Theme update ONLY: colors changed to match Bitcraft Roadmap image.
-     UI Helper image REMOVED as requested.
-     All other structure and JS (including countdown + alarm controls) are IDENTICAL to your current version.
--->
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Bitcraft Timer</title>
   <link rel="icon" href="./favicon.png" />
-  <meta name="description" content="Calculate working duration and stamina for Bitcraft Online.">
+  <meta name="description" content="Calculate working duration and stamina for Bitcraft Online." />
   <style>
     /* =============================
        Bitcraft Roadmap–inspired palette (colors only)
@@ -59,11 +55,13 @@
     .step-value{font-weight:800;color:var(--text)}
     .error{background:rgba(239,107,107,.10);border:1px solid rgba(239,107,107,.35);color:#FFDADA;padding:1rem;border-radius:.5rem;margin-top:1rem;font-weight:700;display:none}
     footer{text-align:center;padding:2rem 0;color:var(--text-muted);font-size:.9rem}
-    .alarm-controls{background:#12182F;border:1px dashed var(--line);border-radius:.5rem;padding:.75rem;margin-top:.75rem}
+    .alarm-controls{background:#12182F;border:1px dashed var(--line);border-radius:.5rem;padding:.75rem;margin-top:1rem}
     .alarm-row{display:grid;grid-template-columns:1fr 1fr;gap:.75rem;align-items:center}
+    @media (max-width:767px){.alarm-row{grid-template-columns:1fr}}
     .inline{display:flex;align-items:center;gap:.5rem}
     .timer-btn{padding:.75rem 1rem;border:none;border-radius:.5rem;background:linear-gradient(135deg,var(--primary) 0%,var(--primary-dark) 100%);color:#1A1625;font-weight:800;cursor:pointer}
     .timer-btn:disabled{opacity:.5;cursor:not-allowed}
+    .muted{color:var(--text-muted);font-size:.9rem}
   </style>
 </head>
 <body>
@@ -74,10 +72,10 @@
     </header>
 
     <main class="calculator-grid">
-      <!-- INPUT CARD (unchanged, image removed) -->
+      <!-- INPUT CARD -->
       <section class="input-card">
         <h2 class="card-title">
-          <svg class="icon" fill="currentColor" viewBox="0 0 20 20"><path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838L7.667 9.088l1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3zM3.31 9.397L5 10.12v4.102a8.969 8.969 0 00-1.05-.174 1 1 0 01-.89-.89 11.115 11.115 0 01-.25-3.762zM9.3 16.573A9.026 9.026 0 007 14.935v-3.957l1.818.78a3 3 0 002.364 0l5.508-2.361a11.026 11.026 0 01.25 3.762 1 1 0 01-.89.89 8.968 8.968 0 00-5.35 2.524 1 1 0 01-1.4 0z"/></svg>
+          <svg class="icon" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true"><path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838L7.667 9.088l1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3zM3.31 9.397L5 10.12v4.102a8.969 8.969 0 00-1.05-.174 1 1 0 01-.89-.89 11.115 11.115 0 01-.25-3.762zM9.3 16.573A9.026 9.026 0 007 14.935v-3.957l1.818.78a3 3 0 002.364 0l5.508-2.361a11.026 11.026 0 01.25 3.762 1 1 0 01-.89.89 8.968 8.968 0 00-5.35 2.524 1 1 0 01-1.4 0z"/></svg>
           Working Parameters
         </h2>
 
@@ -114,17 +112,49 @@
           <input id="stamina" type="number" min="1" step="1" placeholder="Enter your stamina" />
         </div>
 
-        <button class="calculate-btn" onclick="calculateTime()">Calculate Working Time</button>
+        <button class="calculate-btn" id="calcBtn">Calculate Working Time</button>
         <div id="error" class="error" role="alert"></div>
       </section>
 
-      <!-- RESULT CARD (unchanged) -->
+      <!-- RESULT CARD -->
       <section id="result" class="result-card" aria-live="polite">
         <h2 class="card-title">Working Results</h2>
-        <div id="timeDisplay" class="time-display"></div>
+        <div id="timeDisplay" class="time-display" aria-live="polite"></div>
         <div id="secondsDisplay" class="seconds-display"></div>
-        <div id="alarmControls" class="alarm-controls"> ... (unchanged timer controls) ... </div>
-        <div id="staminaAlert" class="stamina-alert"></div>
+
+        <!-- Restored alarm + countdown controls -->
+        <div id="alarmControls" class="alarm-controls">
+          <div class="alarm-row" style="margin-bottom:.5rem">
+            <div>
+              <label for="countdownSeconds">Countdown (seconds)</label>
+              <input id="countdownSeconds" type="number" min="1" step="1" placeholder="e.g., 300 for 5 minutes" />
+            </div>
+            <div class="inline" style="margin-top:1.75rem">
+              <button class="timer-btn" id="startBtn">Start</button>
+              <button class="timer-btn" id="pauseBtn" disabled>Pause</button>
+              <button class="timer-btn" id="resetBtn" disabled>Reset</button>
+            </div>
+          </div>
+          <div class="alarm-row" style="margin-bottom:.5rem">
+            <div class="inline">
+              <input type="checkbox" id="loopAlarm" checked />
+              <label for="loopAlarm" class="muted">Loop alarm sound</label>
+            </div>
+            <div class="inline">
+              <label for="volume" class="muted">Volume</label>
+              <input id="volume" type="range" min="0" max="1" step="0.01" value="0.6" />
+              <button class="timer-btn" id="testAlarmBtn" title="Test alarm">Test</button>
+              <button class="timer-btn" id="stopAlarmBtn" title="Stop alarm" disabled>Stop</button>
+            </div>
+          </div>
+          <div class="alarm-row">
+            <button class="timer-btn" id="syncFromResult" disabled>Set countdown = Total Time</button>
+            <div id="liveCountdown" class="muted" aria-live="polite">Timer idle</div>
+          </div>
+        </div>
+
+        <div id="staminaAlert" class="stamina-alert" role="status"></div>
+
         <div class="calculation-steps">
           <div class="step"><span class="step-label">Notches Required</span><span class="step-value" id="step1Value"></span></div>
           <div class="step"><span class="step-label">Total Time</span><span class="step-value" id="step2Value"></span></div>
@@ -134,9 +164,239 @@
     </main>
   </div>
   <footer><p>&copy; 2025 Bitcraft Timer. No official link with Clockwork Labs.</p></footer>
+
   <audio id="alarmAudio" src="https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg"></audio>
+
   <script>
-    /* original calculateTime() + countdown/alarm JS remains unchanged */
+    // ===== Utilities =====
+    const fmtHMS = (totalSeconds)=>{
+      totalSeconds = Math.max(0, Math.round(totalSeconds));
+      const h = Math.floor(totalSeconds/3600).toString().padStart(2,'0');
+      const m = Math.floor((totalSeconds%3600)/60).toString().padStart(2,'0');
+      const s = Math.floor(totalSeconds%60).toString().padStart(2,'0');
+      return `${h}:${m}:${s}`;
+    };
+
+    const staminaCostByTier = {
+      1:0.75, 2:0.89, 3:1.03, 4:1.16, 5:1.28,
+      6:1.41, 7:1.52, 8:1.64, 9:1.75, 10:1.86
+    };
+
+    // ===== DOM refs =====
+    const els = {
+      totalEffort: document.getElementById('totalEffort'),
+      toolPower: document.getElementById('toolPower'),
+      delay: document.getElementById('delay'),
+      tier: document.getElementById('tier'),
+      stamina: document.getElementById('stamina'),
+      error: document.getElementById('error'),
+      result: document.getElementById('result'),
+      timeDisplay: document.getElementById('timeDisplay'),
+      secondsDisplay: document.getElementById('secondsDisplay'),
+      step1Value: document.getElementById('step1Value'),
+      step2Value: document.getElementById('step2Value'),
+      step3Value: document.getElementById('step3Value'),
+      staminaAlert: document.getElementById('staminaAlert'),
+      calcBtn: document.getElementById('calcBtn'),
+      syncFromResult: document.getElementById('syncFromResult'),
+      // Timer controls
+      countdownSeconds: document.getElementById('countdownSeconds'),
+      startBtn: document.getElementById('startBtn'),
+      pauseBtn: document.getElementById('pauseBtn'),
+      resetBtn: document.getElementById('resetBtn'),
+      loopAlarm: document.getElementById('loopAlarm'),
+      volume: document.getElementById('volume'),
+      testAlarmBtn: document.getElementById('testAlarmBtn'),
+      stopAlarmBtn: document.getElementById('stopAlarmBtn'),
+      liveCountdown: document.getElementById('liveCountdown'),
+      alarmAudio: document.getElementById('alarmAudio')
+    };
+
+    // ===== Calculation logic =====
+    let lastTotalSeconds = 0;
+
+    function validateInputs(){
+      const totalEffort = Number(els.totalEffort.value);
+      const toolPower = Number(els.toolPower.value);
+      const delay = Number(els.delay.value);
+      const tier = Number(els.tier.value);
+
+      if(!Number.isFinite(totalEffort) || totalEffort <= 0) return 'Please enter a valid Total Effort (> 0).';
+      if(!Number.isFinite(toolPower) || toolPower <= 0) return 'Please enter a valid Tool Power (> 0).';
+      if(!Number.isFinite(delay) || delay < 0) return 'Please enter a valid Delay (>= 0).';
+      if(!staminaCostByTier[tier]) return 'Please select a valid Item Tier.';
+      return null;
+    }
+
+    function calculateTime(){
+      const err = validateInputs();
+      if(err){
+        els.error.textContent = err;
+        els.error.style.display = 'block';
+        els.result.classList.remove('show');
+        return;
+      }
+      els.error.style.display = 'none';
+
+      const totalEffort = Number(els.totalEffort.value);
+      const toolPower = Number(els.toolPower.value);
+      const delay = Number(els.delay.value);
+      const tier = Number(els.tier.value);
+      const staminaMax = Number(els.stamina.value);
+
+      const notches = Math.ceil(totalEffort / toolPower);
+      const totalSeconds = notches * delay;
+      lastTotalSeconds = totalSeconds;
+
+      els.timeDisplay.textContent = fmtHMS(totalSeconds);
+      els.secondsDisplay.textContent = `${Math.round(totalSeconds)} seconds total`;
+      els.step1Value.textContent = `${notches} ticks`;
+      els.step2Value.textContent = `${fmtHMS(totalSeconds)} (${Math.round(totalSeconds)}s)`;
+
+      // Stamina block
+      const costPerTick = staminaCostByTier[tier];
+      const totalStamina = +(notches * costPerTick).toFixed(2);
+      let staminaMsg = `Cost ${costPerTick} per tick × ${notches} = ${totalStamina}`;
+
+      els.staminaAlert.className = 'stamina-alert'; // reset classes
+      els.staminaAlert.style.display = 'none';
+
+      if(Number.isFinite(staminaMax) && staminaMax > 0){
+        if(staminaMax >= totalStamina){
+          els.staminaAlert.textContent = `✔ You have enough stamina. Consumption: ${totalStamina}/${staminaMax}.`;
+          els.staminaAlert.classList.add('show','success');
+          staminaMsg += ` — within your ${staminaMax} stamina.`;
+        } else {
+          const doableTicks = Math.floor(staminaMax / costPerTick);
+          const doableTime = doableTicks * delay;
+          els.staminaAlert.innerHTML = `⚠ Not enough stamina. Need <b>${totalStamina}</b>, you have <b>${staminaMax}</b>.<br>`+
+            `You can work ~<b>${doableTicks}</b> ticks (~<b>${fmtHMS(doableTime)}</b>) before resting.`;
+          els.staminaAlert.classList.add('show','warning');
+          staminaMsg += ` — exceeds your ${staminaMax} stamina.`;
+        }
+      }
+      els.step3Value.textContent = staminaMsg;
+
+      // Show result + enable sync
+      els.result.classList.add('show');
+      els.syncFromResult.disabled = !(totalSeconds > 0);
+    }
+
+    // Wire calculate button
+    els.calcBtn.addEventListener('click', calculateTime);
+
+    // ===== Countdown + Alarm logic =====
+    let timerInterval = null;
+    let remaining = 0;
+    let running = false;
+    let alarmRinging = false;
+
+    function updateLiveCountdown(){
+      els.liveCountdown.textContent = running
+        ? `Time left: ${fmtHMS(remaining)} (${Math.max(0, Math.round(remaining))}s)`
+        : (remaining>0 ? `Paused at ${fmtHMS(remaining)}` : 'Timer idle');
+    }
+
+    function setButtons(){
+      els.startBtn.disabled = running || remaining <= 0;
+      els.pauseBtn.disabled = !running;
+      els.resetBtn.disabled = remaining <= 0 && !running;
+      els.stopAlarmBtn.disabled = !alarmRinging;
+    }
+
+    function tick(){
+      remaining -= 1;
+      if(remaining <= 0){
+        clearInterval(timerInterval);
+        timerInterval = null;
+        running = false;
+        remaining = 0;
+        updateLiveCountdown();
+        setButtons();
+        ringAlarm();
+        return;
+      }
+      updateLiveCountdown();
+    }
+
+    function startTimer(){
+      const inputSeconds = Number(els.countdownSeconds.value);
+      if(!running && remaining <= 0){
+        if(!Number.isFinite(inputSeconds) || inputSeconds <= 0){
+          els.liveCountdown.textContent = 'Enter a valid countdown seconds > 0';
+          return;
+        }
+        remaining = Math.round(inputSeconds);
+      }
+      if(running) return;
+      running = true;
+      updateLiveCountdown();
+      setButtons();
+      timerInterval = setInterval(tick, 1000);
+    }
+
+    function pauseTimer(){
+      if(!running) return;
+      running = false;
+      if(timerInterval){ clearInterval(timerInterval); timerInterval = null; }
+      updateLiveCountdown();
+      setButtons();
+    }
+
+    function resetTimer(){
+      running = false;
+      if(timerInterval){ clearInterval(timerInterval); timerInterval = null; }
+      remaining = 0;
+      updateLiveCountdown();
+      setButtons();
+    }
+
+    function ringAlarm(){
+      const audio = els.alarmAudio;
+      audio.loop = els.loopAlarm.checked;
+      audio.volume = Number(els.volume.value);
+      audio.currentTime = 0;
+      audio.play().catch(()=>{});
+      alarmRinging = true;
+      setButtons();
+    }
+
+    function stopAlarm(){
+      els.alarmAudio.pause();
+      els.alarmAudio.currentTime = 0;
+      alarmRinging = false;
+      setButtons();
+    }
+
+    // Timer controls events
+    els.startBtn.addEventListener('click', startTimer);
+    els.pauseBtn.addEventListener('click', pauseTimer);
+    els.resetBtn.addEventListener('click', resetTimer);
+    els.testAlarmBtn.addEventListener('click', ()=>{
+      ringAlarm();
+      // auto-stop after 3s if not looping
+      if(!els.loopAlarm.checked){
+        setTimeout(stopAlarm, 3000);
+      }
+    });
+    els.stopAlarmBtn.addEventListener('click', stopAlarm);
+    els.volume.addEventListener('input', ()=>{ els.alarmAudio.volume = Number(els.volume.value); });
+
+    // Sync button sets countdown to the computed total time
+    els.syncFromResult.addEventListener('click', ()=>{
+      if(lastTotalSeconds > 0){
+        els.countdownSeconds.value = Math.round(lastTotalSeconds);
+        els.liveCountdown.textContent = `Countdown set to ${fmtHMS(lastTotalSeconds)}.`;
+      }
+    });
+
+    // Make Enter key on inputs trigger calculation
+    ['totalEffort','toolPower','delay','tier','stamina'].forEach(id=>{
+      const node = document.getElementById(id);
+      node.addEventListener('keydown', (e)=>{
+        if(e.key==='Enter') calculateTime();
+      });
+    });
   </script>
 </body>
 </html>
