@@ -54,8 +54,8 @@
     .alarm-controls{background:#12182F;border:1px dashed var(--line);border-radius:.5rem;padding:.75rem;margin-top:1rem}
     .alarm-row{display:grid;grid-template-columns:1fr 1fr;gap:.75rem;align-items:center}
     @media (max-width:767px){.alarm-row{grid-template-columns:1fr}}
-    .inline{display:flex;align-items:center;gap:.5rem}
-    .timer-btn{padding:.75rem 1rem;border:none;border-radius:.5rem;background:linear-gradient(135deg,var(--primary) 0%,var(--primary-dark) 100%);color:#1A1625;font-weight:800;cursor:pointer}
+    .inline{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap}
+    .timer-btn{padding:.6rem 1rem;border:none;border-radius:.5rem;background:linear-gradient(135deg,var(--primary) 0%,var(--primary-dark) 100%);color:#1A1625;font-weight:800;cursor:pointer}
     .timer-btn:disabled{opacity:.5;cursor:not-allowed}
     .muted{color:var(--text-muted);font-size:.9rem}
   </style>
@@ -122,10 +122,11 @@
               <label for="countdownSeconds">Countdown (seconds)</label>
               <input id="countdownSeconds" type="number" min="1" step="1" placeholder="e.g., 300 for 5 minutes" />
             </div>
-            <div class="inline" style="margin-top:1.75rem">
-              <button class="timer-btn" id="startBtn">Start</button>
-              <button class="timer-btn" id="pauseBtn" disabled>Pause</button>
-              <button class="timer-btn" id="resetBtn" disabled>Reset</button>
+            <div class="inline" style="margin-top:1.5rem">
+              <button class="timer-btn" id="startBtn" title="Start / resume">Start</button>
+              <button class="timer-btn" id="pauseBtn" title="Pause" disabled>Pause</button>
+              <button class="timer-btn" id="resetBtn" title="Reset to 0" disabled>Reset</button>
+              <button class="timer-btn" id="restartBtn" title="Restart from seed" disabled>Restart</button>
             </div>
           </div>
           <div class="alarm-row" style="margin-bottom:.5rem">
@@ -159,7 +160,7 @@
 
   <footer><p>&copy; 2025 Bitcraft Timer. No official link with Clockwork Labs.</p></footer>
 
-  <!-- Audio with MP3 fallback (Safari/iOS doesn't play OGG) -->
+  <!-- OGG + MP3 sources for broad browser support -->
   <audio id="alarmAudio" preload="auto">
     <source src="https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg" type="audio/ogg" />
     <source src="https://assets.mixkit.co/sfx/preview/mixkit-alarm-digital-clock-beep-989.mp3" type="audio/mpeg" />
@@ -199,6 +200,7 @@
       startBtn: document.getElementById('startBtn'),
       pauseBtn: document.getElementById('pauseBtn'),
       resetBtn: document.getElementById('resetBtn'),
+      restartBtn: document.getElementById('restartBtn'),
       loopAlarm: document.getElementById('loopAlarm'),
       volume: document.getElementById('volume'),
       testAlarmBtn: document.getElementById('testAlarmBtn'),
@@ -273,6 +275,8 @@
 
       els.result.classList.add('show');
       els.syncFromResult.disabled = !(totalSeconds > 0);
+      // Also prime restart seed from result if desired later
+      // handled in syncFromResult listener below.
     }
 
     els.calcBtn.addEventListener('click', calculateTime);
@@ -283,6 +287,7 @@
     let running = false;
     let alarmRinging = false;
     let audioCtx = null; // WebAudio fallback
+    let initialCountdown = 0; // seed for Restart
 
     function updateLiveCountdown(){
       els.liveCountdown.textContent = running
@@ -291,9 +296,10 @@
     }
 
     function setButtons(){
-      els.startBtn.disabled = running || remaining <= 0;
+      els.startBtn.disabled = running; // allow start whenever not running; logic validates value
       els.pauseBtn.disabled = !running;
-      els.resetBtn.disabled = remaining <= 0 && !running;
+      els.resetBtn.disabled = !running && remaining <= 0 && !alarmRinging;
+      els.restartBtn.disabled = running || (initialCountdown <= 0 && Number(els.countdownSeconds.value) <= 0 && lastTotalSeconds <= 0);
       els.stopAlarmBtn.disabled = !alarmRinging;
     }
 
@@ -312,22 +318,32 @@
       updateLiveCountdown();
     }
 
+    function stopAlarm(){
+      try{ els.alarmAudio.pause(); els.alarmAudio.currentTime = 0; }catch(e){}
+      alarmRinging = false;
+    }
+
     function startTimer(){
+      // If just finished or reset, seed from input
       const inputSeconds = Number(els.countdownSeconds.value);
       if(!running && remaining <= 0){
         if(!Number.isFinite(inputSeconds) || inputSeconds <= 0){
           els.liveCountdown.textContent = 'Enter a valid countdown seconds > 0';
+          setButtons();
           return;
         }
         remaining = Math.round(inputSeconds);
+        initialCountdown = remaining; // remember seed for Restart
       }
       if(running) return;
+      stopAlarm();
       running = true;
       updateLiveCountdown();
       setButtons();
+      if(timerInterval){ clearInterval(timerInterval); }
       timerInterval = setInterval(tick, 1000);
 
-      // On the first user gesture, resume AudioContext if needed
+      // Enable audio on user gesture
       try{
         if(!audioCtx){ audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
         if(audioCtx.state === 'suspended'){ audioCtx.resume(); }
@@ -346,8 +362,31 @@
       running = false;
       if(timerInterval){ clearInterval(timerInterval); timerInterval = null; }
       remaining = 0;
+      stopAlarm();
       updateLiveCountdown();
       setButtons();
+    }
+
+    function restartTimer(){
+      // Prefer stored seed; if empty, fallback to input or lastTotalSeconds
+      let seed = initialCountdown;
+      const inputSeconds = Number(els.countdownSeconds.value);
+      if(!(seed>0)){
+        if(Number.isFinite(inputSeconds) && inputSeconds>0) seed = Math.round(inputSeconds);
+        else if(lastTotalSeconds>0) seed = Math.round(lastTotalSeconds);
+      }
+      if(!(seed>0)){
+        els.liveCountdown.textContent = 'No previous duration. Set seconds or click "Set countdown = Total Time"';
+        setButtons();
+        return;
+      }
+      if(timerInterval){ clearInterval(timerInterval); timerInterval = null; }
+      stopAlarm();
+      remaining = seed;
+      running = true;
+      updateLiveCountdown();
+      setButtons();
+      timerInterval = setInterval(tick, 1000);
     }
 
     function playWebAudioBeep(durationMs=2500){
@@ -357,7 +396,7 @@
         const o = audioCtx.createOscillator();
         const g = audioCtx.createGain();
         o.type = 'square';
-        o.frequency.value = 880; // A5
+        o.frequency.value = 880;
         g.gain.setValueAtTime(0.001, audioCtx.currentTime);
         g.gain.exponentialRampToValueAtTime(0.2, audioCtx.currentTime + 0.05);
         g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + durationMs/1000);
@@ -366,9 +405,8 @@
         o.stop(audioCtx.currentTime + durationMs/1000);
         alarmRinging = true;
         setButtons();
-        // auto-clear after duration
         setTimeout(()=>{ alarmRinging = false; setButtons(); }, durationMs);
-      }catch(e){ /* ignore */ }
+      }catch(e){}
     }
 
     function ringAlarm(){
@@ -380,13 +418,9 @@
       const tryPlay = () => audio.play().then(()=>{
         alarmRinging = true;
         setButtons();
-      }).catch(()=>{
-        // Fallback if autoplay or codec fails
-        playWebAudioBeep(3000);
-      });
+      }).catch(()=>{ playWebAudioBeep(3000); });
 
-      // If source not yet ready, wait a tick
-      if(audio.readyState < 2){ // HAVE_CURRENT_DATA
+      if(audio.readyState < 2){
         const onCanPlay = ()=>{ audio.removeEventListener('canplay', onCanPlay); tryPlay(); };
         audio.addEventListener('canplay', onCanPlay);
         audio.load();
@@ -395,30 +429,35 @@
       }
     }
 
-    function stopAlarm(){
-      const audio = els.alarmAudio;
-      try{ audio.pause(); audio.currentTime = 0; }catch(e){}
-      alarmRinging = false;
-      setButtons();
-    }
-
-    // Timer control events
+    // Timer controls events
     els.startBtn.addEventListener('click', startTimer);
     els.pauseBtn.addEventListener('click', pauseTimer);
     els.resetBtn.addEventListener('click', resetTimer);
+    els.restartBtn.addEventListener('click', restartTimer);
     els.testAlarmBtn.addEventListener('click', ()=>{
       ringAlarm();
-      if(!els.loopAlarm.checked){ setTimeout(stopAlarm, 3000); }
+      if(!els.loopAlarm.checked){ setTimeout(()=>{ stopAlarm(); setButtons(); }, 3000); }
+      setButtons();
     });
-    els.stopAlarmBtn.addEventListener('click', stopAlarm);
+    els.stopAlarmBtn.addEventListener('click', ()=>{ stopAlarm(); setButtons(); });
     els.volume.addEventListener('input', ()=>{ els.alarmAudio.volume = Number(els.volume.value); });
 
-    // Sync button sets countdown to the computed total time
+    // Sync button: copy computed total time to countdown and seed restart
     els.syncFromResult.addEventListener('click', ()=>{
       if(lastTotalSeconds > 0){
-        els.countdownSeconds.value = Math.round(lastTotalSeconds);
-        els.liveCountdown.textContent = `Countdown set to ${fmtHMS(lastTotalSeconds)}.`;
+        const v = Math.round(lastTotalSeconds);
+        els.countdownSeconds.value = v;
+        initialCountdown = v; // seed restart
+        els.liveCountdown.textContent = `Countdown set to ${fmtHMS(v)}.`;
+        setButtons();
       }
+    });
+
+    // When user edits the countdown field, treat it as a new seed
+    els.countdownSeconds.addEventListener('input', ()=>{
+      const v = Number(els.countdownSeconds.value);
+      if(Number.isFinite(v) && v > 0){ initialCountdown = Math.round(v); }
+      setButtons();
     });
 
     // Enter key triggers calculation
@@ -429,9 +468,12 @@
 
     // Preload audio on first interaction to satisfy mobile autoplay rules
     document.addEventListener('click', function once(){
-      const a = els.alarmAudio; try{ a.load(); }catch(e){}
+      try{ els.alarmAudio.load(); }catch(e){}
       document.removeEventListener('click', once, {capture:false});
     }, {capture:false, once:true});
+
+    // Initial button state
+    setButtons();
   </script>
 </body>
 </html>
